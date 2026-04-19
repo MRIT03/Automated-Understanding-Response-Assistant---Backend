@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16
+    container_name: fire_dispatch_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fire_dispatch
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fire_dispatch_api
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    volumes:
+      - ./:/app
+
+volumes:
+  postgres_data:
