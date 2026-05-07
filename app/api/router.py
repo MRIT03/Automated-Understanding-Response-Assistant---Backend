@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import assistant, calls, dispatchers, health, incident_types, incidents
+from app.api.v1.endpoints import assistant, calls, dispatchers, health, incident_types, incidents, transcripts
 
 api_router = APIRouter()
 api_router.include_router(health.router, tags=["health"])
@@ -9,3 +9,4 @@ api_router.include_router(incident_types.router, prefix="/incident-types", tags=
 api_router.include_router(incidents.router, prefix="/incidents", tags=["incidents"])
 api_router.include_router(calls.router, prefix="/calls", tags=["calls"])
 api_router.include_router(assistant.router, prefix="/assistant", tags=["assistant"])
+api_router.include_router(transcripts.router, prefix="/transcripts", tags=["transcripts"])

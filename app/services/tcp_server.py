@@ -3,6 +3,8 @@ import json
 import logging
 from typing import Any
 
+from app.services.transcript_store import transcript_store
+
 logger = logging.getLogger("whisper_tcp")
 logger.setLevel(logging.INFO)
 
@@ -23,6 +25,8 @@ async def process_transcript(event: dict[str, Any]):
         "end": event.get("end"),
         "is_final": True,
     }
+
+    await transcript_store.add(payload)
 
     print(f"[TCP] Clean transcript: {payload}", flush=True)
     logger.info(f"Clean transcript: {payload}")
