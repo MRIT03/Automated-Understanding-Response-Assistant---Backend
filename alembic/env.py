@@ -7,10 +7,13 @@ from sqlalchemy import engine_from_config, pool
 
 from app.core.config import settings
 from app.db.base import Base
-from app.models.call import Call
-from app.models.dispatcher import Dispatcher
-from app.models.incident import Incident
-from app.models.incident_type import IncidentType
+
+# All models must be imported here so Alembic can detect schema changes.
+from app.models.employee import Employee  # noqa: F401
+from app.models.incident_category import IncidentCategory  # noqa: F401
+from app.models.incident_type import IncidentType  # noqa: F401
+from app.models.incident import Incident  # noqa: F401
+from app.models.phone_call import PhoneCall  # noqa: F401
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.database_url)
@@ -32,7 +35,6 @@ def run_migrations_offline() -> None:
 
     with context.begin_transaction():
         context.run_migrations()
-
 
 
 def run_migrations_online() -> None:
