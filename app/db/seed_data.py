@@ -3,51 +3,67 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.models.incident_category import IncidentCategory
 from app.models.incident_type import IncidentType
-from app.models.enums import PriorityLevel
 
-DEFAULT_INCIDENT_TYPES = [
-    {
-        "code": "FIRE_STRUCTURE",
-        "name": "Structure Fire",
-        "category": "fire",
-        "description": "Residential or commercial building fire.",
-        "default_priority": PriorityLevel.CRITICAL,
-    },
-    {
-        "code": "FIRE_VEHICLE",
-        "name": "Vehicle Fire",
-        "category": "fire",
-        "description": "Fire involving a car, truck, bus, or other vehicle.",
-        "default_priority": PriorityLevel.HIGH,
-    },
-    {
-        "code": "EMS_TRANSPORT",
-        "name": "Ambulance Transport",
-        "category": "ems",
-        "description": "Medical transport request requiring ambulance support.",
-        "default_priority": PriorityLevel.HIGH,
-    },
-    {
-        "code": "RESCUE_TECH",
-        "name": "Technical Rescue",
-        "category": "rescue",
-        "description": "Complex rescue such as confined space, collapse, or high-angle rescue.",
-        "default_priority": PriorityLevel.CRITICAL,
-    },
-    {
-        "code": "RESCUE_WATER",
-        "name": "Water Rescue",
-        "category": "rescue",
-        "description": "Rescue involving rivers, sea, flooding, or submerged vehicles.",
-        "default_priority": PriorityLevel.CRITICAL,
-    },
+# Mirrors the INSERT statements in the canonical SQL schema.
+CATEGORIES = [
+    {"name": "Fires", "description": "Fire-related incidents"},
+    {"name": "Transportation", "description": "Transport-related incidents"},
+    {"name": "Preemptive Measures", "description": "Preventive and preemptive operations"},
 ]
 
+INCIDENT_TYPES_BY_CATEGORY = {
+    "Fires": [
+        {"name": "Forest Fire", "description": "Fire in a forested area"},
+        {"name": "Field Fire", "description": "Fire in open fields or agricultural land"},
+        {"name": "House Fire", "description": "Fire in a residential building"},
+        {"name": "Urban Fire", "description": "Fire in an urban environment"},
+    ],
+    "Transportation": [
+        {"name": "Patient Transportation", "description": "Transporting a patient"},
+        {"name": "Hospital Transportation", "description": "Transport to or from a hospital"},
+    ],
+    "Preemptive Measures": [
+        {"name": "Vehicle Transportation", "description": "Vehicle transport under preventive measures"},
+    ],
+}
 
-def seed_incident_types(db: Session) -> None:
-    existing_codes = {row[0] for row in db.execute(select(IncidentType.code)).all()}
-    for item in DEFAULT_INCIDENT_TYPES:
-        if item["code"] not in existing_codes:
-            db.add(IncidentType(**item))
+
+def seed_categories(db: Session) -> dict[str, int]:
+    """Insert missing categories and return a name → id mapping."""
+    existing = {
+        row.name: row.id
+        for row in db.execute(select(IncidentCategory)).scalars().all()
+    }
+
+    for cat in CATEGORIES:
+        if cat["name"] not in existing:
+            record = IncidentCategory(**cat)
+            db.add(record)
+            db.flush()
+            existing[record.name] = record.id
+
     db.commit()
+    return existing
+
+
+def seed_incident_types(db: Session, category_ids: dict[str, int]) -> None:
+    """Insert missing incident types under their respective categories."""
+    existing_names = {
+        row.name
+        for row in db.execute(select(IncidentType)).scalars().all()
+    }
+
+    for category_name, types in INCIDENT_TYPES_BY_CATEGORY.items():
+        category_id = category_ids[category_name]
+        for item in types:
+            if item["name"] not in existing_names:
+                db.add(IncidentType(category_id=category_id, **item))
+
+    db.commit()
+
+
+def seed_all(db: Session) -> None:
+    category_ids = seed_categories(db)
+    seed_incident_types(db, category_ids)
