@@ -4,8 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import get_db
-from app.models.call import Call
 from app.models.incident import Incident
+from app.models.incident_type import IncidentType
+from app.models.phone_call import PhoneCall
 from app.schemas.assistant import (
     AssistantQueryRequest,
     AssistantQueryResponse,
@@ -36,35 +37,43 @@ def query_assistant(payload: AssistantQueryRequest, db: Session = Depends(get_db
     call_context = "No call selected."
 
     if payload.incident_id is not None:
-        incident = (
+        stmt = (
             db.query(Incident)
-            .options(joinedload(Incident.incident_type))
+            .options(joinedload(Incident.incident_type).joinedload(IncidentType.category))
             .filter(Incident.id == payload.incident_id)
-            .one_or_none()
         )
+        incident = stmt.one_or_none()
         if not incident:
             raise HTTPException(status_code=404, detail="Incident not found")
+
+        type_name = incident.incident_type.name if incident.incident_type else str(incident.incident_type_id)
         incident_context = (
-            f"Incident #{incident.incident_number} | type={incident.incident_type.name if incident.incident_type else incident.incident_type_id} "
-            f"| status={incident.status.value} | priority={incident.priority.value} | address={incident.location_address} "
-            f"| details={incident.location_details or ''} | description={incident.description or ''} "
-            f"| units_requested={incident.units_requested} | units_dispatched={incident.units_dispatched}"
+            f"Incident #{incident.id} | type={type_name} | status={incident.status} "
+            f"| priority={incident.priority} | address={incident.address or ''} "
+            f"| caller={incident.caller_name or 'unknown'} | phone={incident.caller_phone or 'unknown'} "
+            f"| description={incident.description or ''}"
         )
 
     if payload.call_id is not None:
-        call = (
-            db.query(Call)
-            .options(joinedload(Call.dispatcher), joinedload(Call.incident))
-            .filter(Call.id == payload.call_id)
-            .one_or_none()
+        stmt = (
+            db.query(PhoneCall)
+            .options(joinedload(PhoneCall.employee))
+            .filter(PhoneCall.id == payload.call_id)
         )
-        if not call:
-            raise HTTPException(status_code=404, detail="Call not found")
+        phone_call = stmt.one_or_none()
+        if not phone_call:
+            raise HTTPException(status_code=404, detail="Phone call not found")
+
+        employee_name = (
+            f"{phone_call.employee.first_name} {phone_call.employee.last_name}"
+            if phone_call.employee
+            else str(phone_call.employee_id)
+        )
         call_context = (
-            f"Call #{call.call_reference} | dispatcher={call.dispatcher.full_name if call.dispatcher else call.dispatcher_id} "
-            f"| status={call.call_status.value} | priority={call.priority.value} | location={call.reported_location} "
-            f"| caller={call.caller_name or 'unknown'} | phone={call.caller_phone or 'unknown'} "
-            f"| summary={call.summary or ''} | notes={call.dispatcher_notes or ''} | transcript={call.transcript or ''}"
+            f"Phone call #{phone_call.id} | employee={employee_name} "
+            f"| caller_phone={phone_call.caller_phone or 'unknown'} "
+            f"| started={phone_call.started_at} | notes={phone_call.notes or ''} "
+            f"| transcript={phone_call.whisper_transcript or ''}"
         )
 
     retrieved_context: list[str] = []

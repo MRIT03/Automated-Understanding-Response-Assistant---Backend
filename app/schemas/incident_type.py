@@ -4,26 +4,20 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from app.models.enums import PriorityLevel
 from app.schemas.common import ORMModel
+from app.schemas.incident_category import IncidentCategoryRead
 
 
 class IncidentTypeCreate(BaseModel):
-    code: str = Field(min_length=2, max_length=50)
-    name: str = Field(min_length=2, max_length=120)
-    category: str = Field(min_length=2, max_length=50)
+    category_id: int
+    name: str = Field(min_length=2, max_length=150)
     description: str | None = None
-    default_priority: PriorityLevel = PriorityLevel.MEDIUM
-    is_active: bool = True
 
 
 class IncidentTypeRead(ORMModel):
     id: int
-    code: str
+    category_id: int
     name: str
-    category: str
     description: str | None
-    default_priority: PriorityLevel
-    is_active: bool
     created_at: datetime
-    updated_at: datetime
+    category: IncidentCategoryRead | None = None
