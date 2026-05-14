@@ -6,10 +6,10 @@ from typing import Any
 
 
 class TranscriptStore:
-    """Small in-memory store for live transcript chunks.
+    """In-memory store for live transcript chunks.
 
-    This keeps the latest TCP transcript data available to the FastAPI layer.
-    It is intentionally simple and resets when the backend restarts.
+    Each item carries the call_id from the bridge so the rest of the system
+    can correlate live chunks with the post-call offline transcript.
     """
 
     def __init__(self) -> None:
@@ -20,6 +20,7 @@ class TranscriptStore:
         async with self._lock:
             item = {
                 "id": len(self._items) + 1,
+                "call_id": payload.get("call_id"),
                 "type": payload.get("type", "transcript"),
                 "text": payload.get("text", ""),
                 "start": payload.get("start"),
@@ -36,9 +37,7 @@ class TranscriptStore:
 
     async def get_latest(self) -> dict[str, Any] | None:
         async with self._lock:
-            if not self._items:
-                return None
-            return dict(self._items[-1])
+            return dict(self._items[-1]) if self._items else None
 
     async def clear(self) -> None:
         async with self._lock:

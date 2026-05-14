@@ -64,14 +64,23 @@ record_agent = Agent(
 
 Given a cleaned emergency call transcript, generate a structured record matching the system schema.
 
-Incident type codes to use:
-- FIRE_STRUCTURE — house or building fire
-- FIRE_FIELD — field or agricultural fire  
-- FIRE_FOREST — forest fire
-- FIRE_URBAN — urban environment fire
-- EMS_TRANSPORT — patient transport
-- HOSPITAL_TRANSPORT — transport to/from hospital
-- VEHICLE_TRANSPORT — vehicle transport under preventive measures
+incident_type_code is REQUIRED.
+You MUST ALWAYS choose ONE of the following exact values:
+
+- FIRE_STRUCTURE
+- FIRE_FIELD
+- FIRE_FOREST
+- FIRE_URBAN
+- EMS_TRANSPORT
+- HOSPITAL_TRANSPORT
+- VEHICLE_TRANSPORT
+
+Never return null for incident_type_code.
+Never omit incident_type_code.
+
+If uncertain:
+- default to FIRE_URBAN for fire/smoke/emergency incidents
+- default to EMS_TRANSPORT for medical incidents
 
 Priority rules:
 - critical: immediate life threat, fire spreading, people trapped

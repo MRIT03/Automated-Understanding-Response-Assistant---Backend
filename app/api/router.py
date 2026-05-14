@@ -9,6 +9,7 @@ from app.api.v1.endpoints import (
     incidents,
     phone_calls,
     transcripts,
+    settings
 )
 
 api_router = APIRouter()
@@ -20,3 +21,10 @@ api_router.include_router(incidents.router, prefix="/incidents", tags=["incident
 api_router.include_router(phone_calls.router, prefix="/phone-calls", tags=["phone-calls"])
 api_router.include_router(assistant.router, prefix="/assistant", tags=["assistant"])
 api_router.include_router(transcripts.router, prefix="/transcripts", tags=["transcripts"])
+
+
+api_router.include_router(
+    settings.router,
+    prefix="/settings",
+    tags=["settings"],
+)

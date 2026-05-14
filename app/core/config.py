@@ -19,6 +19,9 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/fire_dispatch"
 
+    # URL of the agents microservice — uses Docker service name by default.
+    agents_service_url: str = "http://agents:8001"
+
     openai_api_key: str | None = None
     openai_model: str = "gpt-4.1-mini"
     openai_embedding_model: str = "text-embedding-3-small"
